@@ -23,16 +23,22 @@ public class ChunkedReadHandler extends ChannelInboundHandlerAdapter {
     private long readedSize = 0;
     private String path = "E:/test/";
     private String fileName;
+    private byte[] bs;
 
-    private boolean readFinish=false;
+    private boolean readFinish = false;
 
-    public ChunkedReadHandler(long size, String fileName) {
+    public ChunkedReadHandler(long size, String fileName ,byte[] bs) {
         this.fileSize = size;
         this.fileName = fileName;
+        this.bs = bs;
         this.file = new File(path + fileName);
         try {
             ofs = new FileOutputStream(this.file);
-        } catch (FileNotFoundException e) {
+            if (this.bs.length>0){
+                ofs.write(this.bs);
+                readedSize += this.bs.length;
+            }
+        } catch (Exception e) {
             e.printStackTrace();
         }
     }
@@ -41,46 +47,50 @@ public class ChunkedReadHandler extends ChannelInboundHandlerAdapter {
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
 
         ByteBuf buf = (ByteBuf) msg;
-        long needRead = fileSize - readedSize;
-        int readableBytes = buf.readableBytes();
-        if (buf.isReadable())
+        do {
+            long needRead = fileSize - readedSize;
+            int readableBytes = buf.readableBytes();
             if (needRead >= readableBytes) {
                 readedSize += readableBytes;
                 byte[] bytes = new byte[readableBytes];
                 buf.readBytes(bytes);
                 ofs.write(bytes);
 
-            } else if (needRead>0){
+            } else if (needRead > 0) {
                 readedSize += needRead;
                 byte[] bytes = new byte[(int) needRead];
                 buf.readBytes(bytes);
                 ofs.write(bytes);
             }
+            System.out.println(fileSize + "   " + readedSize);
 
+            if (readedSize >= fileSize) {
+                readFinish = true;
+                ctx.pipeline().remove(this);
+                addHandler(ctx);
+                ofs.close();
+            }/*else ctx.read();*/
+        } while (buf.isReadable());
 
-        if (readedSize >= fileSize) {
-            readFinish=true;
-            ctx.pipeline().remove(this);
-            addHandler(ctx);
-            ofs.close();
-        }else ctx.read();
         buf.release();
     }
 
     @Override
     public void channelReadComplete(ChannelHandlerContext ctx) throws Exception {
-        ctx.flush();
+        /*ctx.flush();
         System.out.println(fileSize + "   " + readedSize);
-        if (!readFinish){
+        if (!readFinish) {
             ctx.read();
-        }
+        } else {
+            ctx.close();
+        }*/
 
     }
 
     private void addHandler(ChannelHandlerContext ctx) {
         ChannelPipeline pipeline = ctx.pipeline();
-        pipeline.addLast("lineBasedFrameDecoder", new LineBasedFrameDecoder(8192));
-        pipeline.addLast("stringDecoder", MyFileClient.stringDecoder);
+//        pipeline.addLast("lineBasedFrameDecoder", new LineBasedFrameDecoder(8192));
+//        pipeline.addLast("stringDecoder", MyFileClient.stringDecoder);
         pipeline.addLast("fileClientHandler", MyFileClient.fileClientHandler);
         /*
 

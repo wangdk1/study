@@ -13,6 +13,8 @@ import io.netty.util.CharsetUtil;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 /**
  * @author: wangdk
@@ -23,13 +25,14 @@ public class MyFileClient {
     static int PORT = 8023;
     static String HOST = "127.0.0.1";
 
-    public static StringDecoder stringDecoder = new StringDecoder(CharsetUtil.UTF_8);
+//    public static StringDecoder stringDecoder = new StringDecoder(CharsetUtil.UTF_8);
     public static FileClientHandler fileClientHandler = new FileClientHandler();
+
+    static ExecutorService executorService = Executors.newSingleThreadExecutor();
 
     public static void main(String[] args) throws Exception {
         EventLoopGroup group = new NioEventLoopGroup();
         try {
-            final MyClientHandler myClientHandler = new MyClientHandler();
 
             Bootstrap b = new Bootstrap();
             b.group(group)
@@ -40,23 +43,21 @@ public class MyFileClient {
                         @Override
                         protected void initChannel(Channel ch) throws Exception {
                             ChannelPipeline pipeline = ch.pipeline();
-                            pipeline.addLast("lineBasedFrameDecoder",new LineBasedFrameDecoder(8192));
-                            pipeline.addLast("stringDecoder",new StringDecoder(CharsetUtil.UTF_8));
-                            pipeline.addLast("fileClientHandler",new FileClientHandler());
+                            pipeline.addLast("fileClientHandler",fileClientHandler);
 
-//                            pipeline.addLast(myClientHandler);
                         }
                     });
 
             ChannelFuture f = b.connect(HOST, PORT).sync();
             Channel channel = f.channel();
 
-            //设置clientId，并启动线程
-            new Thread(new ChannelRun(channel)).start();
+            executorService.submit(new ChannelRun(channel));
+
             channel.closeFuture().sync();
         } finally {
             // Shut down the event loop to terminate all threads.
             group.shutdownGracefully();
+            executorService.shutdown();
         }
     }
 }
