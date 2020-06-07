@@ -1,5 +1,1 @@
 package com
-
-func main() {
-
-}
