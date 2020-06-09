@@ -6,10 +6,9 @@ import io.netty.buffer.Unpooled;
 import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioSocketChannel;
-import io.netty.handler.codec.LineBasedFrameDecoder;
-import io.netty.handler.codec.string.StringDecoder;
-import io.netty.handler.codec.string.StringEncoder;
-import io.netty.util.CharsetUtil;
+import io.netty.handler.codec.serialization.ClassResolvers;
+import io.netty.handler.codec.serialization.ObjectDecoder;
+import io.netty.handler.codec.serialization.ObjectEncoder;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -42,11 +41,14 @@ public class Test1Client {
                         @Override
                         protected void initChannel(Channel ch) throws Exception {
                             ChannelPipeline pipeline = ch.pipeline();
-                            pipeline.addLast(new LineBasedFrameDecoder(8192));
+                            /*pipeline.addLast(new LineBasedFrameDecoder(8192));
                             pipeline.addLast(new StringDecoder(CharsetUtil.UTF_8));
                             pipeline.addLast(new StringEncoder(CharsetUtil.UTF_8));
-                            pipeline.addLast(new Test1ClientHandler());
+                            pipeline.addLast(new Test1ClientHandler());*/
 
+                            pipeline.addLast(new ObjectEncoder());
+                            pipeline.addLast(new ObjectDecoder(ClassResolvers.cacheDisabled(null)));
+                            pipeline.addLast(new ObjectClientHandler());
                         }
                     });
 

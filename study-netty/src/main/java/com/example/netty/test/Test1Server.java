@@ -5,12 +5,11 @@ import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
-import io.netty.handler.codec.LineBasedFrameDecoder;
-import io.netty.handler.codec.string.StringDecoder;
-import io.netty.handler.codec.string.StringEncoder;
+import io.netty.handler.codec.serialization.ClassResolvers;
+import io.netty.handler.codec.serialization.ObjectDecoder;
+import io.netty.handler.codec.serialization.ObjectEncoder;
 import io.netty.handler.logging.LogLevel;
 import io.netty.handler.logging.LoggingHandler;
-import io.netty.util.CharsetUtil;
 
 /**
  * 简单聊天功能测试
@@ -34,14 +33,21 @@ public class Test1Server {
                     .childHandler(new ChannelInitializer<SocketChannel>() {
                         @Override
                         public void initChannel(SocketChannel ch) throws Exception {
-                            ChannelPipeline p = ch.pipeline();
+                            ChannelPipeline pipeline = ch.pipeline();
 
-                            p.addLast(
+                           /* pipeline.addLast(
                                     new StringEncoder(CharsetUtil.UTF_8),
                                     new LineBasedFrameDecoder(8192),
                                     new StringDecoder(CharsetUtil.UTF_8),
                                     new Test1ServerHandler()
-                            );
+                            );*/
+
+                            pipeline.addLast(new ObjectEncoder());
+                            pipeline.addLast(new ObjectDecoder(ClassResolvers.cacheDisabled(null)));
+                            pipeline.addLast(new ObjectServerHandler());
+
+
+
                         }
                     });
 
