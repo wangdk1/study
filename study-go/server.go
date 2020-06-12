@@ -34,7 +34,7 @@ func main() {
 
 func handConn(conn net.Conn) {
 	//defer conn.Close()
-	var bytes [5]byte
+	var bytes []byte = make([]byte,10)
 	var  i int
 	for  {
 
