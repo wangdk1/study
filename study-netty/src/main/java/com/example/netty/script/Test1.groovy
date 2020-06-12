@@ -40,7 +40,9 @@ def  quickSort(int[] arr, int start, int end) {
         while ((i < j)&&arr[j] > value){
             j--
         }
+
         if ((arr[i]==arr[j])&&(i<j)) {
+            i++
         } else {
             swap(arr,j,i)
         }
